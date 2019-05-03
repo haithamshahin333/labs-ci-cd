@@ -4,6 +4,7 @@ ansible_connection: local
 jenkins_name: jenkins
 sonarqube_name: sonarqube
 hoverfly_name: hoverfly
+zap_name: zap
 
 jenkins:
   build:
@@ -46,6 +47,14 @@ hoverfly:
     MEMORY_LIMIT: 2Gi
     HOVERFLY_IMAGE_STREAM_TAG: "{{ hoverfly_name }}:latest"
 
+zap:
+  build:
+    NAME: "{{ zap_name }}"
+    SOURCE_REPOSITORY_URL: https://github.com/haithamshahin333/containers-quickstarts.git
+    SOURCE_REPOSITORY_REF: master
+    SOURCE_CONTEXT_DIR: owasp-zap
+  deploy:
+    NAME: "{{ zap_name }}"
   
 openshift_cluster_content:
 - galaxy_requirements:
@@ -82,6 +91,13 @@ openshift_cluster_content:
     tags:
       - sonarqube
       - sonarqube-build
+  - name: zap
+    template: "https://raw.githubusercontent.com/haithamshahin333/containers-quickstarts/master/build-docker-generic/.openshift/templates/docker-build-template.yml"
+    params_from_vars: "{{ zap.build }}"
+    namespace: "{{ ci_cd_namespace }}"
+    tags:
+      - zap
+      - zap-build
 - object: jenkins-slave-nodes
   content:
   - name: jenkins-slave-mvn
@@ -214,3 +230,10 @@ openshift_cluster_content:
     tags:
       - hoverfly
       - hoverfly-deploy
+  - name: zap-template
+    file: "https://raw.githubusercontent.com/haithamshahin333/containers-quickstarts/master/owasp-zap/.openshift/templates/zap-deployment-template.yml"
+    namespace: "{{ ci_cd_namespace }}"
+    params_from_vars: "{{ zap.deploy }}"
+    tags:
+      - zap
+      - zap-deploy
